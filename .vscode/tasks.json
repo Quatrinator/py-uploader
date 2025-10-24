@@ -5,7 +5,9 @@
             "label": "Run Nextcloud GUI",
             "type": "shell",
             "command": "python",
-            "args": ["main.py"],
+            "args": [
+                "main.py"
+            ],
             "group": "build",
             "problemMatcher": []
         }
