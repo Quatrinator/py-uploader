@@ -1,8 +1,13 @@
+import copy
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import requests
 import os
+import shutil
 from pathlib import Path
+import xml.etree.ElementTree as ET
+from urllib.parse import unquote, urlparse
+import posixpath
 
 class NextcloudClient:
     def __init__(self):
@@ -97,8 +102,133 @@ class NextcloudClient:
                     else:
                         part_file.write(f.read(part_size))
         return temp_folder
-        
+    
+    
+    def merge_file_parts(self, local_folder, temp_folder, filename, parts):
+        base_name = os.path.basename(filename)
+        temp_folder = os.path.join(temp_folder, base_name)
 
+        if not os.path.isdir(temp_folder):
+            return False
+
+        output_path = os.path.join(temp_folder, base_name)
+
+        try:
+            with open(output_path, 'wb') as out_f:
+                for i in range(int(parts)):
+                    part_name = f"{base_name}.part{i}"
+                    part_path = os.path.join(temp_folder, part_name)
+                    if not os.path.exists(part_path):
+                        # Missing part -> abort
+                        return False
+                    with open(part_path, 'rb') as pf:
+                        while True:
+                            chunk = pf.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            out_f.write(chunk)
+            shutil.copy(output_path, os.path.join(local_folder, base_name))
+            # Remove parts and the temporary folder
+            for f in os.listdir(temp_folder):
+                try:
+                    os.remove(os.path.join(temp_folder, f))
+                except Exception:
+                    pass
+            try:
+                os.rmdir(temp_folder)
+            except Exception:
+                pass
+
+            return True
+        except Exception:
+            return False
+        
+    
+
+    def download_folder(self, remote_folder, filename,local_folder):
+        # Build the relative path for the requested folder on the WebDAV tree
+        if remote_folder:
+            req_rel = f"{remote_folder.rstrip('/')}/{filename}".strip('/')
+        else:
+            req_rel = filename.strip('/')
+
+        temp_folder = local_folder+'/'+(os.path.basename(filename))
+
+        if not os.path.exists(temp_folder):
+            os.makedirs(temp_folder)
+        else:
+            for f in os.listdir(temp_folder):
+                os.remove(os.path.join(temp_folder, f))
+
+        # PROPFIND the folder to list its children
+        url = self.get_webdav_url(req_rel)
+        propfind_body = ('<?xml version="1.0" encoding="utf-8"?>'
+                         '<propfind xmlns="DAV:">'
+                         '<prop><displayname/><resourcetype/><getcontentlength/>'
+                         '</prop></propfind>')
+        headers = {'Depth': '1'}
+        r = requests.request('PROPFIND', url, auth=(self.username, self.password), data=propfind_body, headers=headers)
+        # Save raw response for debugging/inspection
+        self.last_webdav_response = r.text if r is not None else ''
+
+        if r.status_code != 207:
+            return False
+
+        ns = {'d': 'DAV:'}
+        try:
+            root = ET.fromstring(r.content)
+        except Exception:
+            return False
+
+        # For each response except the folder itself, download or recurse
+        for resp in root.findall('d:response', ns):
+            href_elem = resp.find('d:href', ns)
+            if href_elem is None:
+                continue
+            href = unquote(href_elem.text or '')
+            parsed = urlparse(href)
+            href_path = parsed.path if parsed.path else href
+
+            # If this response corresponds to the requested folder itself, skip
+            if href_path.rstrip('/').endswith(req_rel.rstrip('/')):
+                continue
+
+            # Compute the path relative to the WebDAV root
+            wdp = self.webdav_path.rstrip('/')
+            if wdp and wdp in href_path:
+                rel = href_path.split(wdp, 1)[1].lstrip('/')
+            else:
+                rel = href_path.lstrip('/')
+            rel = rel.strip('/')
+
+            if not rel:
+                continue
+
+            parent, name = posixpath.split(rel)
+            remote_parent = '/' + parent if parent else ''
+
+            # Determine if resource is a directory (collection)
+            prop = resp.find('d:propstat/d:prop', ns)
+            is_dir = False
+            if prop is not None:
+                resourcetype = prop.find('d:resourcetype', ns)
+                if resourcetype is not None and resourcetype.find('d:collection', ns) is not None:
+                    is_dir = True
+
+            # Local target for the item
+            item_local_path = os.path.join(temp_folder, name)
+
+            if is_dir:
+                # Recurse into subfolder
+                self.download_folder(remote_parent, name, item_local_path)
+            else:
+                # Download the file into the containing local folder
+                self.download_file(remote_parent, name, temp_folder)
+
+        return True
+    
+ 
+        
 
     def download_file(self, remote_folder, filename, local_folder):
         url = f"{self.get_webdav_url(remote_folder)}{filename}"
@@ -201,18 +331,29 @@ class App(tk.Tk):
 
     def create_download_page(self):
         self.download_folder = tk.StringVar()
-        self.download_remote_file_folder = tk.StringVar()
         self.download_folder.set(str(Path.home() / "Downloads"))
+        self.download_temp_folder = tk.StringVar()
+        self.download_temp_folder.set(str(Path.home() / "Downloads" / "temp"))
+        self.download_remote_file_folder = tk.StringVar()
         self.download_remote_file_folder.set('/Documents/uploader')
+        self.download_parts = tk.IntVar()
+        self.download_parts.set(1)
         download_container = ttk.Frame(self.download_frame)
         download_container.pack(fill='x', expand=True, padx=10, pady=10)
         ttk.Label(download_container, text="Download-Ordner:").grid(row=0, column=0, sticky='w', pady=5)
         ttk.Entry(download_container, textvariable=self.download_folder, width=40).grid(row=0, column=1, sticky='ew', padx=5)
         ttk.Button(download_container, text="Durchsuchen", command=self.select_download_folder).grid(row=0, column=2, padx=5)
-        download_container.grid_columnconfigure(1, weight=1)
-        ttk.Label(download_container, text="Nextcloud Datei:").grid(row=1, column=0, sticky='w', pady=5)
-        ttk.Entry(download_container, textvariable=self.download_remote_file_folder, width=40).grid(row=1, column=1, sticky='ew', padx=5)
-        ttk.Button(download_container, text="Download", command=self.download_file_action).grid(row=2, column=0, columnspan=3, pady=10)
+        download_container.grid_columnconfigure(0, weight=1)
+        ttk.Label(download_container, text="Temp-Ordner:").grid(row=1, column=0, sticky='w', pady=5)
+        ttk.Entry(download_container, textvariable=self.download_temp_folder, width=40).grid(row=1, column=1, sticky='ew', padx=5)
+        ttk.Button(download_container, text="Durchsuchen", command=self.select_download_folder).grid(row=1, column=2, padx=5)
+        ttk.Label(download_container, text="Split in:").grid(row=2, column=0, sticky='w', pady=5)
+        ttk.Entry(download_container, textvariable=self.download_parts, width=40).grid(row=2, column=1, sticky='ew', padx=5)
+        ttk.Label(download_container, text="Nextcloud Datei:").grid(row=3, column=0, sticky='w', pady=5)
+        ttk.Entry(download_container, textvariable=self.download_remote_file_folder, width=40).grid(row=3, column=1, sticky='ew', padx=5)
+        ttk.Button(download_container, text="Download", command=self.download_file_action).grid(row=4, column=0, columnspan=3, pady=10)
+        ttk.Button(download_container, text="Just Merge", command=self.download_merge_action).grid(row=5, column=0, columnspan=3, pady=10)
+
 
     def select_download_folder(self):
         folder = filedialog.askdirectory()
@@ -222,16 +363,39 @@ class App(tk.Tk):
     def download_file_action(self):
         remote_file = self.download_remote_file_folder.get()
         local_folder = self.download_folder.get()
+        temp_folder = self.download_temp_folder.get()
+        parts = self.download_parts.get()
         if not remote_file or not local_folder:
             messagebox.showerror("Fehler", "Bitte Datei und lokalen Ordner angeben.")
             return
         # remote_file enthält jetzt den vollständigen Pfad
-        folder, filename = os.path.split(remote_file)
-        success = self.client.download_file(folder, filename, local_folder)
+        if parts > 1:
+            folder, filename = os.path.split(remote_file)
+            success = self.client.download_folder(folder, filename, temp_folder)
+            if success:
+                success = self.client.merge_file_parts(local_folder, temp_folder, filename, parts)
+        else:
+            folder, filename = os.path.split(remote_file)
+            success = self.client.download_file(folder, filename, local_folder)
         if success:
             messagebox.showinfo("Erfolg", "Datei erfolgreich heruntergeladen.")
         else:
             messagebox.showerror("Fehler", "Download fehlgeschlagen.")
+    
+    def download_merge_action(self):
+        remote_file = self.download_remote_file_folder.get()
+        local_folder = self.download_folder.get()
+        temp_folder = self.download_temp_folder.get()
+        parts = self.download_parts.get()
+        if parts > 1:
+            folder, filename = os.path.split(remote_file)
+            success = self.client.merge_file_parts(local_folder,temp_folder, filename, parts)
+        else:
+            success = False
+        if success:
+            messagebox.showinfo("Erfolg", "Datei erfolgreich gemerget.")
+        else:
+            messagebox.showerror("Fehler", "Merge fehlgeschlagen.")
 
     def create_settings_page(self):
         self.server_entry = tk.StringVar()
