@@ -253,7 +253,7 @@ class App(tk.Tk):
         self.create_widgets()
 
     def create_widgets(self):
-        self.tk_set_darkmode()
+        #self.tk_set_darkmode()
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill='both', expand=True)
         self.upload_frame = ttk.Frame(self.notebook)

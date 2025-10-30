@@ -9,17 +9,6 @@ Dieses Python-Projekt bietet eine grafische Oberfläche (GUI) mit drei Seiten:
 - Python 3.8+
 - Pakete: tkinter, requests
 
-## Installation
-Installiere die benötigten Pakete:
-```
-pip install requests
-```
-Tkinter ist meist vorinstalliert.
+## Funktionsweise
 
-## Start
-```
-python main.py
-```
-
-## Hinweise
-Die Nextcloud-Interaktion erfolgt über die WebDAV-API. Die Zugangsdaten werden in den Settings eingegeben und getestet.
+-
