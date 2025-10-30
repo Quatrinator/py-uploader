@@ -41,6 +41,8 @@ Trage in der Settings-Seite folgende Werte ein:
 
 Klicke auf „Testen“, um zu prüfen, ob die Verbindung funktioniert.
 
+<img width="502" height="432" alt="Screenshot 2025-10-30 142048" src="https://github.com/user-attachments/assets/4cf1a44f-0885-4663-a612-90437316195b" />
+
 ## Upload — Ablauf
 
 1. Auf der Upload-Seite Datei wählen (`Datei`).
@@ -53,6 +55,10 @@ Verhalten
 - Bei `Split in > 1` wird die Datei lokal in `<Temp Dir>/<Dateiname>/` in N Teile geteilt. Dann wird in der Nextcloud unter dem angegebenen Ordner ein Unterordner mit dem Dateinamen erstellt und alle Teilen dort hochgeladen.
 - Bei `Split in == 1` wird die Datei als einzelne Datei hochgeladen.
 
+<img width="502" height="432" alt="Screenshot 2025-10-30 143826" src="https://github.com/user-attachments/assets/1061bcba-60e5-4fbb-af9c-49d7fe1ef5ef" />
+<img width="643" height="412" alt="Screenshot 2025-10-30 142251" src="https://github.com/user-attachments/assets/b3bd5d25-3dca-4132-aa74-3b89f40e1350" />
+<img width="1510" height="796" alt="Screenshot 2025-10-30 143129" src="https://github.com/user-attachments/assets/9c8d019c-8afe-4590-bb2a-81316577afef" />
+
 ## Download — Ablauf
 
 1. Auf der Download-Seite lokalen Zielordner unter `Download-Ordner` wählen.
@@ -64,6 +70,8 @@ Verhalten
 Verhalten
 - Bei `Split in > 1` wird ein temporäres Verzeichnis `<Temp Ordner>/<Dateiname>/` erzeugt, die Part-Dateien werden dort heruntergeladen und anschließend in `<Download-Ordner>/<Dateiname>` zusammengefügt. Danach wird das temporäre Verzeichnis bereinigt.
 - Bei `Split in == 1` wird die Datei direkt in den `Download-Ordner` geschrieben.
+
+<img width="502" height="432" alt="Screenshot 2025-10-30 141837" src="https://github.com/user-attachments/assets/6480196f-fe7d-466a-927e-d26bf1711e77" />
 
 ## Wichtige Hinweise / Best Practices
 - Stelle sicher, dass `Temp Dir` und `Download-Ordner` unterschiedlich sind.
