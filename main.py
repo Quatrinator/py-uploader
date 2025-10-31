@@ -300,6 +300,7 @@ class App(tk.Tk):
         ttk.Label(upload_container, text="Nextcloud Ordner:").grid(row=3, column=0, sticky='w', pady=5)
         ttk.Entry(upload_container, textvariable=self.upload_folder, width=40).grid(row=3, column=1, sticky='ew', padx=5)
         ttk.Button(upload_container, text="Hochladen", command=self.upload_file).grid(row=4, column=0, columnspan=3, pady=10)
+        ttk.Button(upload_container, text="Just Split", command=self.split_file).grid(row=5, column=0, columnspan=3, pady=10)
 
     def select_upload_file(self):
         path = filedialog.askopenfilename()
@@ -329,6 +330,19 @@ class App(tk.Tk):
         else:
             messagebox.showerror("Fehler", "Upload fehlgeschlagen.")
 
+    def split_file(self):
+        file_path = self.upload_file_path.get()
+        temp_folder = self.upload_temp_folder.get()
+        parts = self.upload_parts.get()
+        if not file_path:
+            messagebox.showerror("Fehler", "Bitte Datei angeben.")
+            return
+        if parts > 1:
+            temp_folder = self.client.split_file(file_path, temp_folder, parts)
+            messagebox.showinfo("Erfolg", f"Datei erfolgreich in {parts} Teile gesplittet im Ordner:\n{temp_folder}")
+        else:
+            messagebox.showerror("Fehler", "Anzahl der Teile muss größer als 1 sein.")
+
     def create_download_page(self):
         self.download_folder = tk.StringVar()
         self.download_folder.set(str(Path.home() / "Downloads"))
@@ -343,17 +357,16 @@ class App(tk.Tk):
         ttk.Label(download_container, text="Download Ordner:").grid(row=0, column=0, sticky='w', pady=5)
         ttk.Entry(download_container, textvariable=self.download_folder, width=40).grid(row=0, column=1, sticky='ew', padx=5)
         ttk.Button(download_container, text="Durchsuchen", command=self.select_download_folder).grid(row=0, column=2, padx=5)
-        download_container.grid_columnconfigure(0, weight=1)
+        download_container.grid_columnconfigure(1, weight=1)
         ttk.Label(download_container, text="Temp Ordner:").grid(row=1, column=0, sticky='w', pady=5)
         ttk.Entry(download_container, textvariable=self.download_temp_folder, width=40).grid(row=1, column=1, sticky='ew', padx=5)
         ttk.Button(download_container, text="Durchsuchen", command=self.select_download_folder).grid(row=1, column=2, padx=5)
-        ttk.Label(download_container, text="Split in:").grid(row=2, column=0, sticky='w', pady=5)
+        ttk.Label(download_container, text="Merge from:").grid(row=2, column=0, sticky='w', pady=5)
         ttk.Entry(download_container, textvariable=self.download_parts, width=40).grid(row=2, column=1, sticky='ew', padx=5)
         ttk.Label(download_container, text="Nextcloud Datei:").grid(row=3, column=0, sticky='w', pady=5)
         ttk.Entry(download_container, textvariable=self.download_remote_file_folder, width=40).grid(row=3, column=1, sticky='ew', padx=5)
         ttk.Button(download_container, text="Download", command=self.download_file_action).grid(row=4, column=0, columnspan=3, pady=10)
         ttk.Button(download_container, text="Just Merge", command=self.download_merge_action).grid(row=5, column=0, columnspan=3, pady=10)
-
 
     def select_download_folder(self):
         folder = filedialog.askdirectory()
@@ -402,15 +415,20 @@ class App(tk.Tk):
         self.username_entry = tk.StringVar()
         self.password_entry = tk.StringVar()
         self.webdav_path_entry = tk.StringVar(value='/remote.php/webdav/')
-        ttk.Label(self.settings_frame, text="Server Adresse (https):").pack(pady=5)
-        ttk.Entry(self.settings_frame, textvariable=self.server_entry, width=40).pack(pady=5)
-        ttk.Label(self.settings_frame, text="Username:").pack(pady=5)
-        ttk.Entry(self.settings_frame, textvariable=self.username_entry, width=40).pack(pady=5)
-        ttk.Label(self.settings_frame, text="Password:").pack(pady=5)
-        ttk.Entry(self.settings_frame, textvariable=self.password_entry, show='*', width=40).pack(pady=5)
+        settings_container = ttk.Frame(self.settings_frame)
+        settings_container.pack(fill='both', expand=True, padx=10, pady=10)
+        settings_container.grid_columnconfigure(0, weight=1)
+        settings_container.grid_rowconfigure(0, weight=1)
+        settings_container.grid_rowconfigure(8, weight=1)
+        ttk.Label(settings_container, text="Server Adresse:").grid(row=1, column=0, pady=5)
+        ttk.Entry(settings_container, textvariable=self.server_entry, width=40).grid(row=2, column=0, padx=5)
+        ttk.Label(settings_container, text="Username:").grid(row=3, column=0, pady=5)
+        ttk.Entry(settings_container, textvariable=self.username_entry, width=40).grid(row=4, column=0, padx=5)
+        ttk.Label(settings_container, text="Password:").grid(row=5, column=0, pady=5)
+        ttk.Entry(settings_container, textvariable=self.password_entry, show='*', width=40).grid(row=6, column=0, padx=5)
         #ttk.Label(self.settings_frame, text="WebDAV Pfad:").pack(pady=5)
         #ttk.Entry(self.settings_frame, textvariable=self.webdav_path_entry, width=40).pack(pady=5)
-        ttk.Button(self.settings_frame, text="Testen", command=self.test_settings).pack(pady=10)
+        ttk.Button(settings_container, text="Testen", command=self.test_settings).grid(row=7, column=0, pady=10)
 
     def test_settings(self):
         server = self.server_entry.get()

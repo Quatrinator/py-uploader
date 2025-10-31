@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:\\Users\\mu2044\\Pictures\\jo\\Black_hole_-_Messier_87_crop_max_res.jpg', 'img')],
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
