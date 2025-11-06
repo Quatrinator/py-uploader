@@ -55,9 +55,13 @@ Verhalten
 - Bei `Split in > 1` wird die Datei lokal in `<Temp Dir>/<Dateiname>/` in N Teile geteilt. Dann wird in der Nextcloud unter dem angegebenen Ordner ein Unterordner mit dem Dateinamen erstellt und alle Teilen dort hochgeladen.
 - Bei `Split in == 1` wird die Datei als einzelne Datei hochgeladen.
 
-<img width="502" height="432" alt="Screenshot 2025-10-30 143826" src="https://github.com/user-attachments/assets/1061bcba-60e5-4fbb-af9c-49d7fe1ef5ef" />
+<img width="565" height="432" alt="Screenshot 2025-11-06 150555" src="https://github.com/user-attachments/assets/0802804a-52ba-43e4-b640-6b833f40a5da" />
 <img width="643" height="412" alt="Screenshot 2025-10-30 142251" src="https://github.com/user-attachments/assets/b3bd5d25-3dca-4132-aa74-3b89f40e1350" />
 <img width="1510" height="796" alt="Screenshot 2025-10-30 143129" src="https://github.com/user-attachments/assets/9c8d019c-8afe-4590-bb2a-81316577afef" />
+
+### Just Split
+
+Du hast eine 3 GB große Log-Datei, die sich nicht mehr öffnen lässt. In diesem Fall kannst du sie mit Just Split in zwei oder mehrere Teile aufteilen. Anschließend kannst du die einzelnen Teil-Dateien nach Belieben bearbeiten. Wenn du möchtest, lassen sich die bearbeiteten Dateien später über den Reiter Download mit der Just Merge-Funktion wieder zu einer Datei zusammenfügen.
 
 ## Download — Ablauf
 
