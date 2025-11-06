@@ -127,7 +127,7 @@ class NextcloudClient:
                             if not chunk:
                                 break
                             out_f.write(chunk)
-            shutil.copy(output_path, os.path.join(local_folder, base_name))
+            shutil.move(output_path, os.path.join(local_folder, base_name))
             # Remove parts and the temporary folder
             for f in os.listdir(temp_folder):
                 try:
